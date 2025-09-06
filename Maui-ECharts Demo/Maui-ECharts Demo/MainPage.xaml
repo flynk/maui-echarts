@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Maui_ECharts_Demo.MainPage"
+             Title="ECharts Demo">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Left Sidebar - Chart Types List -->
+        <Frame Grid.Column="0" 
+               BackgroundColor="#F5F5F5" 
+               Padding="0" 
+               Margin="0"
+               CornerRadius="0"
+               BorderColor="LightGray">
+            <ScrollView>
+                <VerticalStackLayout Padding="10">
+                    <Label Text="Chart Types" 
+                           FontSize="20" 
+                           FontAttributes="Bold" 
+                           TextColor="Black"
+                           HorizontalOptions="Center" 
+                           Margin="0,10,0,20" />
+                    
+                    <CollectionView x:Name="ChartTypesCollectionView"
+                                    SelectionMode="Single"
+                                    SelectionChanged="OnChartTypeSelectionChanged">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame Padding="15,10" 
+                                       Margin="5" 
+                                       BackgroundColor="White"
+                                       CornerRadius="5"
+                                       BorderColor="Transparent">
+                                    <Frame.Triggers>
+                                        <DataTrigger TargetType="Frame" 
+                                                     Binding="{Binding Source={RelativeSource AncestorType={x:Type CollectionView}}, Path=SelectedItem}" 
+                                                     Value="{Binding}">
+                                            <Setter Property="BackgroundColor" Value="#007ACC" />
+                                        </DataTrigger>
+                                    </Frame.Triggers>
+                                    <Label Text="{Binding Name}" 
+                                           FontSize="16"
+                                           TextColor="Black">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" 
+                                                         Binding="{Binding Source={RelativeSource AncestorType={x:Type CollectionView}}, Path=SelectedItem}" 
+                                                         Value="{Binding}">
+                                                <Setter Property="TextColor" Value="White" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Frame>
+
+        <!-- Main Content Area - Chart Display -->
+        <Frame Grid.Column="1" 
+               Padding="20" 
+               Margin="10"
+               BackgroundColor="White"
+               CornerRadius="10"
+               BorderColor="LightGray">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Label x:Name="ChartTitleLabel" 
+                       Grid.Row="0"
+                       Text="Select a chart type from the left" 
+                       FontSize="24" 
+                       FontAttributes="Bold" 
+                       HorizontalOptions="Center" 
+                       Margin="0,0,0,20" />
+
+                <WebView x:Name="ChartWebView" 
+                         Grid.Row="1"
+                         BackgroundColor="White" />
+            </Grid>
+        </Frame>
+    </Grid>
+
+</ContentPage>
