@@ -11,6 +11,12 @@ public partial class MainPage : ContentPage
         InitializeComponent();
         InitializeChartTypes();
         ChartTypesCollectionView.ItemsSource = ChartTypes;
+        
+        // Auto-select the first chart type
+        if (ChartTypes.Count > 0)
+        {
+            ChartTypesCollectionView.SelectedItem = ChartTypes[0];
+        }
     }
 
     private void InitializeChartTypes()
@@ -41,38 +47,8 @@ public partial class MainPage : ContentPage
 
     private async Task LoadChart(string chartType)
     {
-        string htmlContent = GenerateChartHtml(chartType);
-        ChartWebView.Source = new HtmlWebViewSource { Html = htmlContent };
-    }
-
-    private string GenerateChartHtml(string chartType)
-    {
-        string chartOptions = GetChartOptions(chartType);
-        
-        return $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <script src='https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js'></script>
-    <style>
-        body {{ margin: 0; padding: 0; }}
-        #chart {{ width: 100%; height: 100vh; }}
-    </style>
-</head>
-<body>
-    <div id='chart'></div>
-    <script>
-        var chart = echarts.init(document.getElementById('chart'));
-        var option = {chartOptions};
-        chart.setOption(option);
-        window.addEventListener('resize', function() {{
-            chart.resize();
-        }});
-    </script>
-</body>
-</html>";
+        var options = GetChartOptions(chartType);
+        ChartView.Options = options;
     }
 
     private string GetChartOptions(string chartType)
@@ -127,7 +103,7 @@ public partial class MainPage : ContentPage
                     }
                 }]
             }",
-            
+
             "scatter" => @"{
                 title: { text: 'Scatter Chart Example' },
                 xAxis: {},
@@ -144,7 +120,7 @@ public partial class MainPage : ContentPage
                     ]
                 }]
             }",
-            
+
             "area" => @"{
                 title: { text: 'Area Chart Example' },
                 tooltip: { trigger: 'axis' },
@@ -159,7 +135,7 @@ public partial class MainPage : ContentPage
                     data: [120, 132, 101, 134, 90, 230, 210]
                 }]
             }",
-            
+
             "radar" => @"{
                 title: { text: 'Radar Chart Example' },
                 legend: { data: ['Allocated Budget', 'Actual Spending'] },
@@ -182,7 +158,7 @@ public partial class MainPage : ContentPage
                     ]
                 }]
             }",
-            
+
             "gauge" => @"{
                 title: { text: 'Gauge Chart Example' },
                 tooltip: { formatter: '{a} <br/>{b} : {c}%' },
@@ -193,7 +169,7 @@ public partial class MainPage : ContentPage
                     data: [{ value: 75, name: 'Score' }]
                 }]
             }",
-            
+
             "funnel" => @"{
                 title: { text: 'Funnel Chart Example' },
                 tooltip: { trigger: 'item', formatter: '{a} <br/>{b} : {c}%' },
@@ -224,7 +200,7 @@ public partial class MainPage : ContentPage
                     ]
                 }]
             }",
-            
+
             "heatmap" => @"{
                 title: { text: 'Heatmap Example' },
                 tooltip: { position: 'top' },
@@ -240,7 +216,7 @@ public partial class MainPage : ContentPage
                     emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
                 }]
             }",
-            
+
             "candlestick" => @"{
                 title: { text: 'Candlestick Chart Example' },
                 tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
@@ -256,7 +232,7 @@ public partial class MainPage : ContentPage
                     ]
                 }]
             }",
-            
+
             _ => @"{
                 title: { text: 'Default Chart' },
                 xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] },

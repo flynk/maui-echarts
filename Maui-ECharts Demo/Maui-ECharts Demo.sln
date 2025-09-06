@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36414.22 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maui-ECharts Demo", "Maui-ECharts Demo\Maui-ECharts Demo.csproj", "{86468A70-73B0-4688-B837-91B855FBEC73}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maui-ECharts", "Maui-ECharts\Maui-ECharts.csproj", "{18D0EF70-3D5F-412B-83D2-67230A205587}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -27,6 +29,18 @@ Global
 		{86468A70-73B0-4688-B837-91B855FBEC73}.Release|x86.Build.0 = Release|x86
 		{86468A70-73B0-4688-B837-91B855FBEC73}.Release|ARM64.ActiveCfg = Release|ARM64
 		{86468A70-73B0-4688-B837-91B855FBEC73}.Release|ARM64.Build.0 = Release|ARM64
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Debug|x64.Build.0 = Debug|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Debug|x86.Build.0 = Debug|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Release|x64.ActiveCfg = Release|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Release|x64.Build.0 = Release|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Release|x86.ActiveCfg = Release|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Release|x86.Build.0 = Release|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{18D0EF70-3D5F-412B-83D2-67230A205587}.Release|ARM64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

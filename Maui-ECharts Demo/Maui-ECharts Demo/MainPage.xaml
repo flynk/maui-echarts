@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:echarts="clr-namespace:MauiECharts;assembly=MauiECharts"
              x:Class="Maui_ECharts_Demo.MainPage"
              Title="ECharts Demo">
 
@@ -83,9 +84,10 @@
                        HorizontalOptions="Center" 
                        Margin="0,0,0,20" />
 
-                <WebView x:Name="ChartWebView" 
-                         Grid.Row="1"
-                         BackgroundColor="White" />
+                <echarts:EChartsView x:Name="ChartView" 
+                                    Grid.Row="1"
+                                    Theme="Default"
+                                    BackgroundColor="White" />
             </Grid>
         </Frame>
     </Grid>
