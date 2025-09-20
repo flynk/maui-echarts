@@ -54,7 +54,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Maui-ECharts\Maui-ECharts.csproj" />
+		<ProjectReference Include="..\Flynk.Apps.Maui.ECharts\Flynk.Apps.Maui.ECharts.csproj" />
 	</ItemGroup>
 
 </Project>

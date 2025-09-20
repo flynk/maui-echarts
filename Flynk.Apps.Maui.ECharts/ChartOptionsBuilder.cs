@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Dynamic;
 
-namespace MauiECharts
+namespace Flynk.Apps.Maui.ECharts
 {
     public class ChartOptionsBuilder
     {

@@ -2,7 +2,7 @@ using Microsoft.Maui.Controls;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace MauiECharts
+namespace Flynk.Apps.Maui.ECharts
 {
     public class EChartsView : WebView
     {
@@ -92,8 +92,13 @@ namespace MauiECharts
                 ? "echarts.min.js"
                 : "https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js";
 
+            // Add ECharts GL support
+            string echartsGlSource = UseLocalAssets
+                ? "echarts-gl.min.js"
+                : "https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js";
+
             string themeScript = GetThemeScript();
-            
+
             string chartOptions = "";
             if (options != null)
             {
@@ -119,6 +124,7 @@ namespace MauiECharts
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'>
     <script src='{echartsSource}'></script>
+    <script src='{echartsGlSource}'></script>
     {themeScript}
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -130,9 +136,80 @@ namespace MauiECharts
     <div id='chart'></div>
     <script>
         var chart = echarts.init(document.getElementById('chart'{(GetThemeName() != "Default" ? $", '{GetThemeName()}'" : "")}));
-        {(string.IsNullOrEmpty(chartOptions) ? "" : $"var option = {chartOptions}; chart.setOption(option);")}
+
+        // Enable better interaction defaults
+        function enhanceOptions(option) {{
+            if (!option) return option;
+
+            // Add dataZoom by default for compatible chart types
+            if (!option.dataZoom && (option.xAxis || option.singleAxis)) {{
+                option.dataZoom = [
+                    {{
+                        type: 'inside',
+                        start: 0,
+                        end: 100,
+                        filterMode: 'filter'
+                    }},
+                    {{
+                        type: 'slider',
+                        show: true,
+                        start: 0,
+                        end: 100,
+                        handleIcon: 'path://M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+                        handleSize: '80%',
+                        handleStyle: {{
+                            color: '#fff',
+                            shadowBlur: 3,
+                            shadowColor: 'rgba(0, 0, 0, 0.6)',
+                            shadowOffsetX: 2,
+                            shadowOffsetY: 2
+                        }}
+                    }}
+                ];
+            }}
+
+            // Enable roam for graph-type charts
+            if (option.series) {{
+                option.series.forEach(function(serie) {{
+                    if (serie.type === 'graph' || serie.type === 'tree') {{
+                        serie.roam = true;
+                    }}
+                    if (serie.type === 'tree' && !serie.orient) {{
+                        serie.orient = 'TB';  // Top-Bottom for organizational charts
+                        serie.layout = 'orthogonal';
+                        serie.edgeShape = 'polyline';
+                    }}
+                }});
+            }}
+
+            // Add default toolbox if not present
+            if (!option.toolbox) {{
+                option.toolbox = {{
+                    show: true,
+                    feature: {{
+                        dataZoom: {{ show: true }},
+                        dataView: {{ show: false }},
+                        restore: {{ show: true }},
+                        saveAsImage: {{ show: true }}
+                    }}
+                }};
+            }}
+
+            return option;
+        }}
+
+        {(string.IsNullOrEmpty(chartOptions) ? "" : $@"
+        var option = {chartOptions};
+        option = enhanceOptions(option);
+        chart.setOption(option);")}
+
         window.addEventListener('resize', function() {{
             chart.resize();
+        }});
+
+        // Enable mouse wheel zoom
+        chart.on('dataZoom', function() {{
+            // Handle dataZoom events if needed
         }});
     </script>
 </body>
