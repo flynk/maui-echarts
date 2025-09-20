@@ -34,10 +34,18 @@ A complete, production-ready .NET MAUI control that wraps the JavaScript ECharts
 
 ## 📋 Installation
 
-Install the NuGet package:
+### Using as Project Reference
+
+1. Clone this repository
+2. Add project reference to your .NET MAUI project:
+```xml
+<ProjectReference Include="..\Flynk.Apps.Maui.ECharts\Flynk.Apps.Maui.ECharts.csproj" />
+```
+
+### NuGet Package (Coming Soon)
 
 ```bash
-dotnet add package MauiECharts
+dotnet add package Flynk.Apps.Maui.ECharts
 ```
 
 ## 🎯 Quick Start
@@ -47,341 +55,171 @@ dotnet add package MauiECharts
 ```xml
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:echarts="clr-namespace:Flynk.Apps.Maui.ECharts;assembly=MauiECharts"
-             x:Class="YourApp.MainPage">
+             xmlns:echarts="clr-namespace:Flynk.Apps.Maui.ECharts;assembly=Flynk.Apps.Maui.ECharts"
+             x:Class="YourApp.ChartPage">
+
+    <echarts:EChartsView x:Name="ChartView"
+                        Theme="Default"
+                        HeightRequest="400" />
+</ContentPage>
 ```
 
-### 2. Add the EChartsView control
+### 2. Set chart options in code-behind
 
-```xml
-<echarts:EChartsView x:Name="ChartView"
-                     HeightRequest="400"
-                     Theme="Dark" />
-```
-
-### 3. Set chart options in code-behind
-
-#### Simple One-Liner
 ```csharp
-// Create a line chart in one line
-var options = ChartOptions.CreateLineChart("Sales Data",
-    new[] { "Jan", "Feb", "Mar", "Apr", "May" },
-    ("Product A", new[] { 120.0, 200.0, 150.0, 80.0, 170.0 }),
-    ("Product B", new[] { 220.0, 180.0, 250.0, 190.0, 210.0 })
-);
+// Using JSON string
+ChartView.Options = @"{
+    title: { text: 'Sales Overview' },
+    xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+    yAxis: { type: 'value' },
+    series: [{
+        data: [120, 200, 150, 80, 70],
+        type: 'bar'
+    }]
+}";
 
-ChartView.Options = options;
+// Or using the fluent builder
+var builder = new ChartOptionsBuilder()
+    .SetTitle("Sales Overview")
+    .SetXAxis("category", "Mon", "Tue", "Wed", "Thu", "Fri")
+    .SetYAxis("value")
+    .AddBarSeries("Sales", 120, 200, 150, 80, 70);
+
+ChartView.Options = builder.Build();
 ```
 
-#### Fluent Builder Pattern
+## 📊 Chart Examples
+
+### Line Chart
 ```csharp
-var options = ChartBuilder
-    .LineChart("Revenue Analysis", categories, ("Revenue", data))
-    .WithAnimation(true, 1000, "cubicOut")
-    .WithToolbox("saveAsImage", "restore", "dataZoom")
-    .WithDataZoom(inside: true, slider: true)
-    .Build();
-
-ChartView.Options = options;
-```
-
-#### Advanced Configuration
-```csharp
-var options = ChartBuilder.Create()
-    .WithTitle("Business Dashboard", "Q4 Performance")
-    .WithTooltip("axis")
-    .WithLegend(true, "horizontal", "Revenue", "Costs", "Profit")
-    .WithGrid("10%", "20%", "10%", "15%")
-    .AddBarSeries("Revenue", revenueData, barWidth: "30%")
-    .AddLineSeries("Profit", profitData, smooth: true)
-    .WithVisualMap(0, 100000, "#50a3ba", "#eac736", "#d94e5d")
-    .WithAnimation(true, 1500, "elasticOut")
-    .Configure(opt => {
-        // Custom configuration for advanced scenarios
-        opt.Grid!.BackgroundColor = "rgba(255,255,255,0.1)";
-        opt.Tooltip!.BackgroundColor = "rgba(0,0,0,0.8)";
-    })
-    .Build();
-
-ChartView.Options = options;
-```
-
-#### Direct C# Object Configuration
-```csharp
-var options = new ChartOptions()
-    .SetTitle("Dashboard")
-    .SetTooltip("item")
-    .AddSeries(
-        LineSeries.Create("Revenue", revenueData).WithSmooth(true),
-        BarSeries.Create("Profit", profitData).WithBarWidth("40%")
-    )
-    .SetAnimation(true, 2000, "cubicOut");
-
-ChartView.Options = options;
-```
-
-## 📊 Chart Type Examples
-
-### Line Chart with Area
-```csharp
-var options = ChartBuilder
-    .LineChart("Temperature", hours, ("Temperature", temperatures))
-    .Configure(opt => {
-        var series = opt.Series![0] as LineSeries;
-        series!.SetSmooth(true).SetArea(new AreaStyle { Opacity = 0.5 });
-    })
+var options = new ChartOptionsBuilder()
+    .SetTitle("Temperature Trends")
+    .SetTooltip(trigger: "axis")
+    .SetLegend("Temperature", "Humidity")
+    .SetXAxis("category", "Jan", "Feb", "Mar", "Apr", "May")
+    .SetYAxis("value")
+    .AddLineSeries("Temperature", 5, 10, 15, 18, 22)
+    .AddLineSeries("Humidity", 60, 65, 70, 75, 80)
     .Build();
 ```
 
-### Stacked Bar Chart
+### Pie Chart
 ```csharp
-var options = ChartBuilder.Create()
-    .WithTitle("Sales Comparison")
-    .AddBarSeries("Product A", dataA, stack: "total")
-    .AddBarSeries("Product B", dataB, stack: "total")
-    .AddBarSeries("Product C", dataC, stack: "total")
-    .Build();
-```
-
-### Pie Chart with Donut
-```csharp
-var options = ChartOptions.CreatePieChart("Market Share",
-    ("Search Engine", 1048),
-    ("Direct", 735),
-    ("Email", 580),
-    ("Union Ads", 484)
-);
-
-// Convert to donut
-(options.Series![0] as PieSeries)?.SetDonut();
-```
-
-### Radar Chart
-```csharp
-var indicators = new[] {
-    new RadarIndicator("Coding", 100),
-    new RadarIndicator("Design", 100),
-    new RadarIndicator("Testing", 100),
-    new RadarIndicator("Documentation", 100),
-    new RadarIndicator("Communication", 100)
-};
-
-var options = ChartOptions.CreateRadarChart("Skills Assessment", indicators,
-    ("Developer A", new[] { 85.0, 70.0, 90.0, 60.0, 75.0 }),
-    ("Developer B", new[] { 90.0, 85.0, 80.0, 70.0, 95.0 })
-);
-```
-
-### Scatter Plot
-```csharp
-var options = ChartOptions.CreateScatterChart("Data Distribution",
-    ("Group A", new[] { (1.0, 2.3), (2.1, 3.5), (3.2, 4.1) }),
-    ("Group B", new[] { (1.5, 3.2), (2.5, 4.1), (3.5, 5.2) })
-);
+var options = @"{
+    title: { text: 'Market Share', left: 'center' },
+    series: [{
+        type: 'pie',
+        radius: '50%',
+        data: [
+            { value: 35, name: 'Product A' },
+            { value: 30, name: 'Product B' },
+            { value: 20, name: 'Product C' },
+            { value: 15, name: 'Others' }
+        ]
+    }]
+}";
 ```
 
 ### 3D Bar Chart
 ```csharp
-var options = ChartBuilder.Create()
-    .WithTitle("3D Sales Data")
-    .WithGrid3D(true)
-    .AddBar3DSeries("Sales", data3D)
-    .WithVisualMap(0, 100, "#50a3ba", "#eac736")
-    .Build();
+var options = @"{
+    grid3D: { boxWidth: 200, boxDepth: 80 },
+    xAxis3D: { type: 'category', data: ['Q1', 'Q2', 'Q3', 'Q4'] },
+    yAxis3D: { type: 'value' },
+    zAxis3D: { type: 'category', data: ['2023', '2024'] },
+    series: [{
+        type: 'bar3D',
+        data: [[0,0,5],[0,1,1],[0,2,0],[1,0,7],[1,1,0],[1,2,0],[2,0,1],[2,1,1]]
+    }]
+}";
 ```
 
-### Gauge Chart
+## 🎨 Themes
+
+Apply built-in themes to your charts:
+
 ```csharp
-var options = ChartBuilder.Create()
-    .WithTitle("Performance Meter")
-    .AddGaugeSeries("Score", 75, "%", 0, 100)
-    .Configure(opt => {
-        var gauge = opt.Series![0] as GaugeSeries;
-        gauge!.Detail = new { formatter = "{value}%" };
-    })
-    .Build();
+ChartView.Theme = EChartsTheme.Dark;        // Dark theme
+ChartView.Theme = EChartsTheme.Vintage;     // Vintage theme
+ChartView.Theme = EChartsTheme.Macarons;    // Colorful theme
 ```
 
-## 🛠️ Advanced Usage
-
-### Async Operations
-```csharp
-// Update chart dynamically
-await ChartView.SetOptionAsync(newOptions);
-
-// Clear the chart
-await ChartView.ClearAsync();
-
-// Resize the chart
-await ChartView.ResizeAsync();
-
-// Dispose the chart when done
-await ChartView.DisposeAsync();
-```
+## ⚙️ Advanced Configuration
 
 ### Using Local Assets
-To use a local copy of ECharts instead of CDN:
-
-```xml
-<echarts:EChartsView UseLocalAssets="True" />
-```
-
-### Dynamic Data Updates
 ```csharp
-// Real-time data update
-var timer = new Timer(_ => {
-    MainThread.BeginInvokeOnMainThread(async () => {
-        var newData = GetLatestData();
-        var options = ChartBuilder
-            .LineChart("Real-time Data", timestamps, ("Value", newData))
-            .Build();
-        await ChartView.SetOptionAsync(options);
-    });
-}, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
-```
-
-### Custom Themes
-```csharp
-// Use built-in themes
-ChartView.Theme = EChartsTheme.Dark;
-
-// Or set in XAML
-<echarts:EChartsView Theme="Vintage" />
+// Use local ECharts files instead of CDN
+ChartView.UseLocalAssets = true;
 ```
 
 ### Interactive Features
+The library automatically adds interactive features:
+- **Data Zoom**: Mouse wheel zoom and drag to pan
+- **Toolbox**: Save as image, data view, restore
+- **Tooltips**: Hover to see data details
+- **Legend Toggle**: Click legend items to show/hide series
+
+### Custom Interactions
 ```csharp
-var options = ChartBuilder.Create()
-    .WithTitle("Interactive Chart")
-    .WithToolbox(new Toolbox {
-        Show = true,
-        Feature = new ToolboxFeature {
-            SaveAsImage = new SaveAsImage { Title = "Save" },
-            Restore = new Restore { Title = "Reset" },
-            DataView = new DataView { Title = "Data", ReadOnly = false },
-            DataZoom = new ToolboxDataZoom { Title = new { zoom = "Zoom", back = "Reset" } },
-            MagicType = new MagicType {
-                Type = new[] { "line", "bar", "stack" },
-                Title = new { line = "Line", bar = "Bar", stack = "Stack" }
-            }
-        }
-    })
-    .AddLineSeries("Data", values)
-    .Build();
-```
-
-## 🎨 Complete C# API Structure
-
-### Core Components
-- **ChartOptions**: Main configuration class
-- **ChartBuilder**: Fluent API builder
-- **Title, Legend, Tooltip**: Basic components
-- **Grid, Axis, DataZoom**: Layout and navigation
-- **VisualMap, Toolbox**: Interactive features
-
-### Series Types (30+)
-- **Basic**: LineSeries, BarSeries, PieSeries, ScatterSeries
-- **Statistical**: BoxplotSeries, CandlestickSeries, HeatmapSeries
-- **Relational**: GraphSeries, TreeSeries, SankeySeries
-- **3D**: Bar3DSeries, Line3DSeries, Scatter3DSeries, Surface3DSeries
-- **GL**: ScatterGLSeries, GraphGLSeries, FlowGLSeries
-- **Special**: GaugeSeries, FunnelSeries, RadarSeries
-
-### 3D Support
-- **Globe**: Earth visualization with atmosphere
-- **Grid3D**: 3D coordinate system
-- **Geo3D**: 3D geographic visualization
-- **Light**: Ambient, directional, and point lights
-- **Post Effects**: SSAO, DOF, Bloom, Color Correction
-
-## 📝 Architecture
-
-### Namespace Structure
-```
-Flynk.Apps.Maui.ECharts/
-├── EChartsView.cs              // Main WebView control
-├── EChartsTheme.cs             // Theme enumeration
-├── Options/
-│   ├── ChartOptions.cs         // Main options class
-│   ├── Common/
-│   │   └── BaseTypes.cs        // Core types (Color, Position, etc.)
-│   ├── Components/
-│   │   ├── Title.cs
-│   │   ├── Legend.cs
-│   │   ├── Tooltip.cs
-│   │   ├── Grid.cs
-│   │   ├── Axis.cs
-│   │   ├── DataZoom.cs
-│   │   ├── VisualMap.cs
-│   │   ├── Toolbox.cs
-│   │   └── Chart3DComponents.cs
-│   ├── Series/
-│   │   ├── SeriesBase.cs
-│   │   ├── ChartSeries.cs      // All 2D series
-│   │   └── Chart3DSeries.cs    // All 3D series
-│   └── Builders/
-│       └── ChartBuilder.cs     // Fluent API
-```
-
-## 🔧 Configuration Options
-
-### Enable Development Tools
-```xml
-<!-- In your .csproj file -->
-<PropertyGroup>
-    <EnableWebViewCoreDevTools>true</EnableWebViewCoreDevTools>
-</PropertyGroup>
-```
-
-### Custom JavaScript Integration
-```csharp
-// Execute custom JavaScript
+// Execute JavaScript for advanced interactions
 await ChartView.EvaluateJavaScriptAsync(@"
-    chart.on('click', function (params) {
-        console.log('Chart clicked:', params);
+    chart.on('click', function(params) {
+        console.log('Clicked:', params.name, params.value);
     });
 ");
 ```
 
-## 📚 Documentation
+## 📁 Project Structure
 
-- [Full API Reference](https://github.com/yourusername/maui-echarts/wiki/API-Reference)
-- [Chart Gallery](https://github.com/yourusername/maui-echarts/wiki/Chart-Gallery)
-- [Migration Guide](https://github.com/yourusername/maui-echarts/wiki/Migration-Guide)
-- [Performance Tips](https://github.com/yourusername/maui-echarts/wiki/Performance)
+```
+Flynk.Apps.Maui.ECharts/
+├── EChartsView.cs              # Main control implementation
+├── ChartOptionsBuilder.cs      # Fluent API builder
+├── Options/                    # Strongly-typed options
+│   ├── ChartOptions.cs
+│   ├── Builders/              # Builder patterns
+│   ├── Common/                # Common types
+│   ├── Components/            # Chart components
+│   └── Series/                # Series definitions
+└── Resources/
+    └── Raw/
+        ├── echarts.min.js     # ECharts library
+        └── echarts-gl.min.js  # 3D support
+```
+
+## 🧪 Demo Application
+
+Check out the `Maui-ECharts Demo` folder for a complete demonstration application with examples of all chart types.
+
+To run the demo:
+```bash
+cd "Maui-ECharts"
+dotnet build -t:Run -f net9.0-windows10.0.19041.0
+```
+
+## 📝 Requirements
+
+- .NET 9.0 or later
+- Visual Studio 2022 17.14+ or VS Code
+- Target platforms:
+  - Windows 10.0.17763.0+
+  - Android 21+
+  - iOS 15.0+
+  - macOS 15.0+
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-### Development Setup
-1. Clone the repository
-2. Open the solution in Visual Studio 2022 or later
-3. Ensure you have the .NET MAUI workload installed
-4. Build and run the demo project
-
-### Guidelines
-- Follow the existing code style
-- Add unit tests for new features
-- Update documentation as needed
-- Submit PR against the `develop` branch
-
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details
+This project is licensed under the MIT License. Apache ECharts is licensed under the Apache License 2.0.
 
-## 🆘 Support
+## 🔗 Links
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/maui-echarts/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/maui-echarts/discussions)
-- **Stack Overflow**: Tag with `maui-echarts`
+- [Apache ECharts Documentation](https://echarts.apache.org/en/option.html)
+- [.NET MAUI Documentation](https://docs.microsoft.com/dotnet/maui/)
 
-## 🙏 Acknowledgments
+## 📞 Support
 
-- [Apache ECharts](https://echarts.apache.org/) - The amazing charting library
-- [.NET MAUI Team](https://github.com/dotnet/maui) - For the cross-platform framework
-- All contributors who have helped improve this wrapper
-
----
-
-**Made with ❤️ for the .NET MAUI Community**
+For issues, questions, or suggestions, please open an issue in the GitHub repository.

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:echarts="clr-namespace:MauiECharts;assembly=MauiECharts"
+             xmlns:echarts="clr-namespace:Flynk.Apps.Maui.ECharts;assembly=Flynk.Apps.Maui.ECharts"
              x:Class="Maui_ECharts_Demo.MainPage"
              Title="ECharts Demo">
 
