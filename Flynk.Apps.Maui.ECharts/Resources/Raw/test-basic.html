@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <script src='https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js'></script>
+    <style>
+        #chart { width: 100%; height: 400px; }
+    </style>
+</head>
+<body>
+    <h2>Basic ECharts Test</h2>
+    <div id='chart'></div>
+    <script>
+        // Most basic chart initialization
+        var chart = echarts.init(document.getElementById('chart'));
+
+        // Simple line chart option
+        var option = {
+            title: {
+                text: 'Basic Line Chart'
+            },
+            xAxis: {
+                type: 'category',
+                data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: [150, 230, 224, 218, 135, 147, 260],
+                type: 'line'
+            }]
+        };
+
+        // Set option and log result
+        try {
+            chart.setOption(option);
+            console.log('Chart loaded successfully!');
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('chart').innerHTML = 'Error: ' + error.message;
+        }
+    </script>
+</body>
+</html>

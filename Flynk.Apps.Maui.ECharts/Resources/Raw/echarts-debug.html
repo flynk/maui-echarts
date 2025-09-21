@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'>
+    <script src='https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js'></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        #chart { width: 100%; height: 100%; }
+        #debug-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 10px;
+            max-width: 400px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            display: none;
+            z-index: 9999;
+        }
+        #debug-panel.show { display: block; }
+        .debug-error { color: #ff6666; }
+        .debug-warn { color: #ffcc00; }
+        .debug-info { color: #66ccff; }
+        .debug-success { color: #66ff66; }
+    </style>
+</head>
+<body>
+    <div id='chart'></div>
+    <div id='debug-panel'></div>
+    <script>
+        // Global debug flag
+        window.ECHARTS_DEBUG = true;
+        var debugMessages = [];
+
+        // Debug logging with visual panel
+        function debugLog(level, message, data) {
+            var timestamp = new Date().toISOString().substr(11, 12);
+            var logEntry = {
+                time: timestamp,
+                level: level,
+                message: message,
+                data: data
+            };
+
+            debugMessages.push(logEntry);
+
+            // Console output
+            var color = {
+                'error': '#ff6666',
+                'warn': '#ffcc00',
+                'info': '#66ccff',
+                'success': '#66ff66'
+            }[level] || '#ffffff';
+
+            console.log(`%c[${timestamp}] ${level.toUpperCase()}: ${message}`, `color: ${color}; font-weight: bold`);
+            if (data !== undefined) {
+                console.log(data);
+            }
+
+            // Update debug panel
+            updateDebugPanel();
+        }
+
+        function updateDebugPanel() {
+            var panel = document.getElementById('debug-panel');
+            if (!panel) return;
+
+            panel.classList.add('show');
+            panel.innerHTML = '<h4>Debug Log</h4>';
+
+            debugMessages.slice(-20).forEach(function(msg) {
+                var div = document.createElement('div');
+                div.className = 'debug-' + msg.level;
+                div.textContent = `[${msg.time}] ${msg.message}`;
+                if (msg.data !== undefined && msg.data !== null) {
+                    div.textContent += '\n' + JSON.stringify(msg.data, null, 2).substr(0, 200);
+                }
+                panel.appendChild(div);
+            });
+        }
+
+        // Deep validation of chart options
+        function validateOptions(options) {
+            debugLog('info', 'Starting options validation', null);
+
+            if (!options || typeof options !== 'object') {
+                debugLog('error', 'Invalid options: not an object', options);
+                return false;
+            }
+
+            var errors = [];
+            var warnings = [];
+
+            // Check series
+            if (options.series) {
+                if (!Array.isArray(options.series)) {
+                    errors.push('series must be an array');
+                } else {
+                    options.series.forEach(function(serie, index) {
+                        if (!serie.type) {
+                            errors.push(`Series ${index}: missing type`);
+                        }
+                        if (!serie.data && !serie.datasetIndex && !serie.datasetId) {
+                            warnings.push(`Series ${index}: no data source`);
+                        }
+
+                        // Validate specific properties
+                        if (serie.itemStyle && typeof serie.itemStyle.color === 'object') {
+                            validateGradient(serie.itemStyle.color, `series[${index}].itemStyle.color`, errors);
+                        }
+                        if (serie.lineStyle && typeof serie.lineStyle.color === 'object') {
+                            validateGradient(serie.lineStyle.color, `series[${index}].lineStyle.color`, errors);
+                        }
+                        if (serie.areaStyle && typeof serie.areaStyle.color === 'object') {
+                            validateGradient(serie.areaStyle.color, `series[${index}].areaStyle.color`, errors);
+                        }
+                    });
+                }
+            }
+
+            // Log results
+            errors.forEach(e => debugLog('error', e, null));
+            warnings.forEach(w => debugLog('warn', w, null));
+
+            if (errors.length > 0) {
+                debugLog('error', `Validation failed with ${errors.length} errors`, null);
+                return false;
+            }
+
+            debugLog('success', 'Options validation passed', null);
+            return true;
+        }
+
+        // Validate gradient objects
+        function validateGradient(gradient, path, errors) {
+            if (!gradient.type) {
+                errors.push(`${path}: gradient missing type`);
+            }
+            if (!gradient.colorStops || !Array.isArray(gradient.colorStops)) {
+                errors.push(`${path}: gradient missing or invalid colorStops`);
+            } else {
+                gradient.colorStops.forEach((stop, i) => {
+                    if (typeof stop !== 'object' || stop.offset === undefined || !stop.color) {
+                        errors.push(`${path}.colorStops[${i}]: invalid color stop`);
+                    }
+                });
+            }
+        }
+
+        // Fix common serialization issues
+        function fixSerializationIssues(options) {
+            debugLog('info', 'Fixing serialization issues', null);
+
+            if (!options || typeof options !== 'object') return options;
+
+            // Create a deep copy
+            var fixed = JSON.parse(JSON.stringify(options));
+
+            // Fix series
+            if (fixed.series && Array.isArray(fixed.series)) {
+                fixed.series = fixed.series.map(function(serie, index) {
+                    // Remove null/undefined properties
+                    Object.keys(serie).forEach(key => {
+                        if (serie[key] === null || serie[key] === undefined) {
+                            delete serie[key];
+                        }
+                    });
+
+                    // Fix color gradients
+                    if (serie.itemStyle && serie.itemStyle.color) {
+                        serie.itemStyle.color = fixColorValue(serie.itemStyle.color, `series[${index}].itemStyle.color`);
+                    }
+                    if (serie.lineStyle && serie.lineStyle.color) {
+                        serie.lineStyle.color = fixColorValue(serie.lineStyle.color, `series[${index}].lineStyle.color`);
+                    }
+                    if (serie.areaStyle && serie.areaStyle.color) {
+                        serie.areaStyle.color = fixColorValue(serie.areaStyle.color, `series[${index}].areaStyle.color`);
+                    }
+
+                    // Fix mark data
+                    if (serie.markPoint && serie.markPoint.data) {
+                        serie.markPoint.data = fixMarkData(serie.markPoint.data);
+                    }
+                    if (serie.markLine && serie.markLine.data) {
+                        serie.markLine.data = fixMarkData(serie.markLine.data);
+                    }
+
+                    // Fix padding arrays
+                    if (serie.label && serie.label.padding) {
+                        serie.label.padding = fixNumberArray(serie.label.padding);
+                    }
+
+                    return serie;
+                });
+            }
+
+            // Fix axes
+            ['xAxis', 'yAxis', 'xAxis3D', 'yAxis3D', 'zAxis3D'].forEach(axisName => {
+                if (fixed[axisName]) {
+                    fixed[axisName] = fixAxis(fixed[axisName], axisName);
+                }
+            });
+
+            debugLog('info', 'Serialization fixes applied', null);
+            return fixed;
+        }
+
+        // Fix color values (especially gradients)
+        function fixColorValue(color, path) {
+            if (typeof color === 'string') {
+                return color;
+            }
+
+            if (typeof color === 'object' && color !== null) {
+                if (color.type && color.colorStops) {
+                    debugLog('info', `Fixing gradient at ${path}`, color);
+
+                    // Ensure all gradient properties are correct
+                    var fixedGradient = {
+                        type: color.type || 'linear'
+                    };
+
+                    // Copy positioning properties
+                    ['x', 'y', 'x2', 'y2', 'r'].forEach(prop => {
+                        if (color[prop] !== undefined) {
+                            fixedGradient[prop] = parseFloat(color[prop]) || 0;
+                        }
+                    });
+
+                    // Fix colorStops
+                    if (Array.isArray(color.colorStops)) {
+                        fixedGradient.colorStops = color.colorStops.map(stop => {
+                            if (typeof stop === 'object' && stop !== null) {
+                                return {
+                                    offset: parseFloat(stop.offset) || 0,
+                                    color: stop.color || '#000000'
+                                };
+                            }
+                            return { offset: 0, color: '#000000' };
+                        });
+                    } else {
+                        fixedGradient.colorStops = [
+                            { offset: 0, color: '#000000' },
+                            { offset: 1, color: '#ffffff' }
+                        ];
+                    }
+
+                    if (color.global !== undefined) {
+                        fixedGradient.global = !!color.global;
+                    }
+
+                    return fixedGradient;
+                }
+            }
+
+            return color;
+        }
+
+        // Fix mark data
+        function fixMarkData(data) {
+            if (!Array.isArray(data)) {
+                debugLog('warn', 'Mark data is not an array', data);
+                return [];
+            }
+
+            return data.map((item, i) => {
+                if (typeof item === 'object' && item !== null) {
+                    // Clean up the object
+                    var fixed = {};
+                    Object.keys(item).forEach(key => {
+                        if (item[key] !== null && item[key] !== undefined) {
+                            fixed[key] = item[key];
+                        }
+                    });
+                    return fixed;
+                }
+                return item;
+            });
+        }
+
+        // Fix number arrays (for padding, symbolSize, etc.)
+        function fixNumberArray(arr) {
+            if (!Array.isArray(arr)) {
+                return arr;
+            }
+            return arr.map(v => typeof v === 'number' ? v : parseFloat(v) || 0);
+        }
+
+        // Fix axis configuration
+        function fixAxis(axis, name) {
+            if (!axis) return axis;
+
+            if (Array.isArray(axis)) {
+                return axis.map((a, i) => fixAxis(a, `${name}[${i}]`));
+            }
+
+            if (typeof axis === 'object') {
+                // Fix data array
+                if (axis.data && !Array.isArray(axis.data)) {
+                    debugLog('warn', `${name}.data is not an array`, axis.data);
+                    axis.data = [];
+                }
+
+                // Fix splitArea colors
+                if (axis.splitArea && axis.splitArea.areaStyle && axis.splitArea.areaStyle.color) {
+                    if (!Array.isArray(axis.splitArea.areaStyle.color)) {
+                        axis.splitArea.areaStyle.color = [axis.splitArea.areaStyle.color];
+                    }
+                }
+            }
+
+            return axis;
+        }
+
+        // Initialize chart with comprehensive error handling
+        function initializeChart(optionsJson) {
+            debugLog('info', '=== CHART INITIALIZATION START ===', null);
+
+            try {
+                // Parse the options
+                var options;
+                if (typeof optionsJson === 'string') {
+                    debugLog('info', 'Parsing JSON options', null);
+                    debugLog('info', 'JSON length: ' + optionsJson.length, null);
+                    options = JSON.parse(optionsJson);
+                } else {
+                    options = optionsJson;
+                }
+
+                debugLog('info', 'Parsed options structure', {
+                    title: options.title ? 'present' : 'missing',
+                    series: options.series ? options.series.length + ' items' : 'missing',
+                    xAxis: options.xAxis ? 'present' : 'missing',
+                    yAxis: options.yAxis ? 'present' : 'missing',
+                    tooltip: options.tooltip ? 'present' : 'missing'
+                });
+
+                // Validate options
+                if (!validateOptions(options)) {
+                    throw new Error('Options validation failed');
+                }
+
+                // Fix serialization issues
+                options = fixSerializationIssues(options);
+
+                // Log final options
+                debugLog('success', 'Final options ready', options);
+
+                // Initialize chart
+                var chartDom = document.getElementById('chart');
+                if (!chartDom) {
+                    throw new Error('Chart container not found');
+                }
+
+                var chart = echarts.init(chartDom);
+
+                // Set the options
+                chart.setOption(options);
+
+                // Handle resize
+                window.addEventListener('resize', function() {
+                    chart.resize();
+                });
+
+                debugLog('success', '=== CHART INITIALIZATION COMPLETE ===', null);
+
+                // Hide debug panel after success (unless there were warnings)
+                setTimeout(function() {
+                    if (debugMessages.filter(m => m.level === 'error' || m.level === 'warn').length === 0) {
+                        document.getElementById('debug-panel').classList.remove('show');
+                    }
+                }, 3000);
+
+                return chart;
+
+            } catch (error) {
+                debugLog('error', 'Failed to initialize chart: ' + error.message, error.stack);
+
+                // Display error on chart area
+                var chartDom = document.getElementById('chart');
+                if (chartDom) {
+                    var errorChart = echarts.init(chartDom);
+                    errorChart.setOption({
+                        title: {
+                            text: 'Chart Initialization Error',
+                            subtext: error.message,
+                            left: 'center',
+                            top: 'middle',
+                            textStyle: {
+                                color: '#ff0000',
+                                fontSize: 18
+                            },
+                            subtextStyle: {
+                                color: '#666',
+                                fontSize: 14
+                            }
+                        }
+                    });
+                }
+
+                return null;
+            }
+        }
+
+        // Message handler for receiving options from C#
+        window.setChartOptions = function(optionsJson) {
+            initializeChart(optionsJson);
+        };
+
+        // Auto-initialize if options are embedded
+        if (typeof CHART_OPTIONS !== 'undefined') {
+            initializeChart(CHART_OPTIONS);
+        }
+    </script>
+</body>
+</html>

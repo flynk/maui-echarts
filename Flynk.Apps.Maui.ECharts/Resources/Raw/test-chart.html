@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'>
+    <script src='https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js'></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        #chart { width: 100%; height: 80%; }
+        #controls { height: 20%; padding: 10px; background: #f0f0f0; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div id='chart'></div>
+    <div id='controls'>
+        <button onclick='loadLineChart()'>Line Chart</button>
+        <button onclick='loadBarChart()'>Bar Chart</button>
+        <button onclick='loadPieChart()'>Pie Chart</button>
+        <button onclick='clearChart()'>Clear</button>
+        <button onclick='showLog()'>Show Log</button>
+    </div>
+    <script>
+        var chart = echarts.init(document.getElementById('chart'));
+        var updateCount = 0;
+
+        function log(message) {
+            console.log(`[${new Date().toISOString()}] ${message}`);
+        }
+
+        function loadLineChart() {
+            updateCount++;
+            log(`Loading line chart (update #${updateCount})`);
+
+            var option = {
+                title: { text: `Line Chart (Update #${updateCount})` },
+                tooltip: { trigger: 'axis' },
+                xAxis: {
+                    type: 'category',
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                },
+                yAxis: { type: 'value' },
+                series: [{
+                    name: 'Sales',
+                    type: 'line',
+                    data: [120, 200, 150, 80, 70, 110, 130].map(v => v + Math.random() * 50),
+                    smooth: true
+                }]
+            };
+
+            chart.clear();
+            chart.setOption(option);
+            log('Line chart loaded successfully');
+        }
+
+        function loadBarChart() {
+            updateCount++;
+            log(`Loading bar chart (update #${updateCount})`);
+
+            var option = {
+                title: { text: `Bar Chart (Update #${updateCount})` },
+                tooltip: { trigger: 'axis' },
+                xAxis: {
+                    type: 'category',
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                },
+                yAxis: { type: 'value' },
+                series: [{
+                    name: 'Revenue',
+                    type: 'bar',
+                    data: [120, 200, 150, 80, 70, 110, 130].map(v => v + Math.random() * 50)
+                }]
+            };
+
+            chart.clear();
+            chart.setOption(option);
+            log('Bar chart loaded successfully');
+        }
+
+        function loadPieChart() {
+            updateCount++;
+            log(`Loading pie chart (update #${updateCount})`);
+
+            var option = {
+                title: { text: `Pie Chart (Update #${updateCount})` },
+                tooltip: { trigger: 'item' },
+                series: [{
+                    name: 'Sales',
+                    type: 'pie',
+                    radius: '50%',
+                    data: [
+                        { value: 1048 + Math.random() * 200, name: 'Product A' },
+                        { value: 735 + Math.random() * 200, name: 'Product B' },
+                        { value: 580 + Math.random() * 200, name: 'Product C' },
+                        { value: 484 + Math.random() * 200, name: 'Product D' },
+                        { value: 300 + Math.random() * 200, name: 'Product E' }
+                    ]
+                }]
+            };
+
+            chart.clear();
+            chart.setOption(option);
+            log('Pie chart loaded successfully');
+        }
+
+        function clearChart() {
+            updateCount++;
+            log(`Clearing chart (operation #${updateCount})`);
+            chart.clear();
+        }
+
+        function showLog() {
+            alert(`Chart has been updated ${updateCount} times. Check console for detailed log.`);
+        }
+
+        // Load initial chart
+        loadLineChart();
+    </script>
+</body>
+</html>

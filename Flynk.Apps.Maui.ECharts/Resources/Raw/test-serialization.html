@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <script src='https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js'></script>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        #chart { width: 100%; height: 400px; border: 1px solid #ccc; }
+        #debug { background: #f5f5f5; padding: 10px; margin-top: 20px; white-space: pre; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h2>C# ChartOptions Serialization Test</h2>
+    <div id='chart'></div>
+    <div>
+        <button onclick='testSimpleLine()'>Test Simple Line</button>
+        <button onclick='testGradientLine()'>Test Gradient Line</button>
+        <button onclick='testBar()'>Test Bar</button>
+        <button onclick='testPie()'>Test Pie</button>
+    </div>
+    <div id='debug'></div>
+
+    <script>
+        var chart = echarts.init(document.getElementById('chart'));
+        var debugEl = document.getElementById('debug');
+
+        function log(message, data) {
+            var timestamp = new Date().toISOString().substr(11, 12);
+            var logEntry = `[${timestamp}] ${message}\n`;
+            if (data) {
+                logEntry += JSON.stringify(data, null, 2) + '\n';
+            }
+            debugEl.textContent += logEntry + '\n';
+            console.log(message, data);
+        }
+
+        function applyOptions(options, description) {
+            try {
+                log(`Testing: ${description}`);
+                log('Options structure:', options);
+
+                chart.clear();
+                chart.setOption(options);
+
+                log('✅ Success!');
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // Test data - these would come from C# in the real app
+        function testSimpleLine() {
+            debugEl.textContent = '';
+            var options = {
+                title: { text: 'Simple Line Chart', subtext: 'Test Data' },
+                tooltip: { trigger: 'axis' },
+                xAxis: {
+                    type: 'category',
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                },
+                yAxis: { type: 'value' },
+                series: [{
+                    name: 'Sales',
+                    type: 'line',
+                    data: [120, 200, 150, 80, 70, 110, 130]
+                }]
+            };
+            applyOptions(options, 'Simple Line Chart');
+        }
+
+        function testGradientLine() {
+            debugEl.textContent = '';
+            var options = {
+                title: { text: 'Line Chart with Gradient' },
+                tooltip: { trigger: 'axis' },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                },
+                yAxis: { type: 'value' },
+                series: [{
+                    name: 'Data',
+                    type: 'line',
+                    data: [120, 132, 101, 134, 90, 230, 210],
+                    smooth: true,
+                    itemStyle: {
+                        color: '#5470c6'
+                    },
+                    lineStyle: {
+                        width: 3,
+                        color: '#5470c6'
+                    },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0,
+                            y: 0,
+                            x2: 0,
+                            y2: 1,
+                            colorStops: [
+                                { offset: 0, color: 'rgba(84, 112, 198, 0.5)' },
+                                { offset: 1, color: 'rgba(84, 112, 198, 0.05)' }
+                            ]
+                        }
+                    }
+                }]
+            };
+            applyOptions(options, 'Line Chart with Gradient');
+        }
+
+        function testBar() {
+            debugEl.textContent = '';
+            var options = {
+                title: { text: 'Bar Chart' },
+                tooltip: { trigger: 'axis' },
+                xAxis: {
+                    type: 'category',
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                },
+                yAxis: { type: 'value' },
+                series: [{
+                    name: 'Revenue',
+                    type: 'bar',
+                    data: [120, 200, 150, 80, 70, 110, 130],
+                    itemStyle: {
+                        color: '#91cc75'
+                    }
+                }]
+            };
+            applyOptions(options, 'Bar Chart');
+        }
+
+        function testPie() {
+            debugEl.textContent = '';
+            var options = {
+                title: {
+                    text: 'Pie Chart',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    data: ['Direct', 'Email', 'Affiliate', 'Video Ads', 'Search']
+                },
+                series: [{
+                    name: 'Sales',
+                    type: 'pie',
+                    radius: '50%',
+                    data: [
+                        { name: 'Direct', value: 335 },
+                        { name: 'Email', value: 310 },
+                        { name: 'Affiliate', value: 234 },
+                        { name: 'Video Ads', value: 135 },
+                        { name: 'Search', value: 1548 }
+                    ],
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+            applyOptions(options, 'Pie Chart');
+        }
+
+        // Test simple line on load
+        testSimpleLine();
+    </script>
+</body>
+</html>

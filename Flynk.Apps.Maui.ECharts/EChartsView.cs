@@ -48,14 +48,15 @@ namespace Flynk.Apps.Maui.ECharts
 
         public EChartsView()
         {
-            InitializeChart();
+            // Don't initialize here - wait for Options to be set
         }
 
         private static void OnOptionsChanged(BindableObject bindable, object oldValue, object newValue)
         {
             if (bindable is EChartsView chartView && newValue != null)
             {
-                chartView.UpdateChart(newValue);
+                // Only load chart with options (don't initialize empty first)
+                chartView.LoadChartWithOptions(newValue);
             }
         }
 
@@ -63,7 +64,15 @@ namespace Flynk.Apps.Maui.ECharts
         {
             if (bindable is EChartsView chartView)
             {
-                chartView.InitializeChart();
+                // Reload with new theme
+                if (chartView.Options != null)
+                {
+                    chartView.LoadChartWithOptions(chartView.Options);
+                }
+                else
+                {
+                    chartView.InitializeChart();
+                }
             }
         }
 
@@ -71,7 +80,15 @@ namespace Flynk.Apps.Maui.ECharts
         {
             if (bindable is EChartsView chartView)
             {
-                chartView.InitializeChart();
+                // Reload with new asset settings
+                if (chartView.Options != null)
+                {
+                    chartView.LoadChartWithOptions(chartView.Options);
+                }
+                else
+                {
+                    chartView.InitializeChart();
+                }
             }
         }
 
@@ -81,8 +98,16 @@ namespace Flynk.Apps.Maui.ECharts
             Source = new HtmlWebViewSource { Html = html };
         }
 
+        private void LoadChartWithOptions(object options)
+        {
+            // Generate HTML with options embedded directly
+            string html = GenerateHtmlWithOptions(options);
+            Source = new HtmlWebViewSource { Html = html };
+        }
+
         private string GenerateHtml()
         {
+            // Always generate without embedded options - they'll be set via JavaScript
             return GenerateHtmlWithOptions(null);
         }
 
@@ -111,7 +136,10 @@ namespace Flynk.Apps.Maui.ECharts
                     var serializerOptions = new JsonSerializerOptions
                     {
                         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        WriteIndented = false
+                        WriteIndented = false,
+                        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                        NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals,
+                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
                     };
                     chartOptions = JsonSerializer.Serialize(options, serializerOptions);
                 }
@@ -135,7 +163,134 @@ namespace Flynk.Apps.Maui.ECharts
 <body>
     <div id='chart'></div>
     <script>
-        var chart = echarts.init(document.getElementById('chart'{(GetThemeName() != "Default" ? $", '{GetThemeName()}'" : "")}));
+        // Debug mode flag
+        var DEBUG_MODE = true;
+        var debugLog = [];
+        var chart; // Global chart instance
+
+        // Log and validate incoming options
+        function logDebug(level, message, data) {{
+            if (DEBUG_MODE) {{
+                var timestamp = new Date().toISOString();
+                var entry = {{ time: timestamp, level: level, message: message, data: data }};
+                debugLog.push(entry);
+                console.log('[' + timestamp + '] ' + level + ': ' + message, data || '');
+            }}
+        }}
+
+        // Validate and fix serialization issues
+        function validateAndFixOptions(options) {{
+            logDebug('info', 'Received options from C#', options);
+
+            if (!options || typeof options !== 'object') {{
+                logDebug('error', 'Invalid options: not an object', options);
+                return null;
+            }}
+
+            // Fix common serialization issues
+            if (options.series && Array.isArray(options.series)) {{
+                options.series = options.series.map((serie, index) => {{
+                    // Log each series
+                    logDebug('info', 'Processing series ' + index + ' (' + serie.type + ')', serie);
+
+                    // Special handling for sankey charts
+                    if (serie.type === 'sankey') {{
+                        logDebug('info', 'Processing sankey chart for series ' + index);
+                        // Sankey needs both data (nodes) and links
+                        if (serie.data && serie.links) {{
+                            logDebug('info', 'Sankey has ' + serie.data.length + ' nodes and ' + serie.links.length + ' links');
+                        }} else if (serie.nodes && serie.links) {{
+                            // Some implementations use 'nodes' instead of 'data'
+                            logDebug('info', 'Moving nodes to data for sankey');
+                            serie.data = serie.nodes;
+                            delete serie.nodes;
+                        }}
+                    }}
+
+                    // Special handling for pie charts
+                    if (serie.type === 'pie') {{
+                        // Fix radius for donut charts
+                        if (serie.radius) {{
+                            logDebug('info', 'Processing pie chart radius for series ' + index, serie.radius);
+                            // Ensure radius stays as array if it's an array (for donut charts)
+                            if (Array.isArray(serie.radius) && serie.radius.length === 2) {{
+                                logDebug('info', 'Keeping radius as array for donut chart: [' + serie.radius[0] + ', ' + serie.radius[1] + ']');
+                            }}
+                        }}
+
+                        if (serie.data) {{
+                            logDebug('info', 'Processing pie chart data for series ' + index, serie.data);
+                            serie.data = serie.data.map((item, itemIndex) => {{
+                                // Ensure pie data has correct format
+                                if (typeof item === 'object' && item !== null) {{
+                                    // Handle both lowercase and uppercase property names
+                                    var fixedItem = {{
+                                        name: item.name || item.Name || 'Item ' + itemIndex,
+                                        value: item.value || item.Value || 0
+                                    }};
+
+                                    // Copy any additional properties (like itemStyle)
+                                    Object.keys(item).forEach(key => {{
+                                        if (key !== 'name' && key !== 'Name' && key !== 'value' && key !== 'Value') {{
+                                            fixedItem[key] = item[key];
+                                        }}
+                                    }});
+
+                                    logDebug('info', 'Fixed pie item ' + itemIndex, fixedItem);
+                                    return fixedItem;
+                                }}
+                                return item;
+                            }});
+                        }}
+                    }}
+
+                    // Fix gradient colors
+                    ['itemStyle', 'lineStyle', 'areaStyle'].forEach(styleProp => {{
+                        if (serie[styleProp] && serie[styleProp].color) {{
+                            var color = serie[styleProp].color;
+                            if (typeof color === 'object' && color.type) {{
+                                logDebug('info', 'Fixing gradient in ' + styleProp + ' for series ' + index, color);
+                                // Ensure gradient properties are numbers
+                                ['x', 'y', 'x2', 'y2', 'r'].forEach(prop => {{
+                                    if (color[prop] !== undefined) {{
+                                        color[prop] = parseFloat(color[prop]) || 0;
+                                    }}
+                                }});
+                                // Fix colorStops
+                                if (Array.isArray(color.colorStops)) {{
+                                    color.colorStops = color.colorStops.map(stop => ({{
+                                        offset: parseFloat(stop.offset) || 0,
+                                        color: stop.color || '#000'
+                                    }}));
+                                }}
+                            }}
+                        }}
+                    }});
+
+                    // Fix data arrays
+                    if (serie.data && !Array.isArray(serie.data)) {{
+                        logDebug('warn', 'Series ' + index + ' data is not an array', serie.data);
+                        serie.data = [];
+                    }}
+
+                    // Remove null/undefined properties
+                    Object.keys(serie).forEach(key => {{
+                        if (serie[key] === null || serie[key] === undefined) {{
+                            delete serie[key];
+                        }}
+                    }});
+
+                    return serie;
+                }});
+            }}
+
+            // Log final processed options
+            logDebug('success', 'Options validated and fixed', options);
+            return options;
+        }}
+
+        // Initialize global chart instance
+        chart = echarts.init(document.getElementById('chart'{(GetThemeName() != "Default" ? $", '{GetThemeName()}'" : "")}));
 
         // Enable better interaction defaults
         function enhanceOptions(option) {{
@@ -198,10 +353,95 @@ namespace Flynk.Apps.Maui.ECharts
             return option;
         }}
 
-        {(string.IsNullOrEmpty(chartOptions) ? "" : $@"
-        var option = {chartOptions};
-        option = enhanceOptions(option);
-        chart.setOption(option);")}
+        // Export debug log for inspection
+        window.getDebugLog = function() {{ return debugLog; }};
+        window.getLastError = function() {{ return debugLog.filter(e => e.level === 'error').slice(-1)[0]; }};
+
+        // Set initial options if provided
+        {(string.IsNullOrEmpty(chartOptions) ? @"
+        // No initial options - show placeholder
+        chart.setOption({
+            title: {
+                text: 'Chart Ready',
+                subtext: 'Waiting for data',
+                left: 'center',
+                top: 'middle',
+                textStyle: { color: '#999' }
+            }
+        });" : $@"
+        // Apply initial options
+        try {{
+            var initialOptions = {chartOptions};
+            console.log('RAW JSON:', JSON.stringify(initialOptions));
+            logDebug('info', 'Applying initial options', initialOptions);
+
+            // Log the series structure specifically
+            if (initialOptions.series) {{
+                console.log('Series structure:', initialOptions.series);
+                if (initialOptions.series[0]) {{
+                    console.log('First series:', initialOptions.series[0]);
+                    if (initialOptions.series[0].data) {{
+                        console.log('First series data:', initialOptions.series[0].data);
+                    }}
+                }}
+            }}
+
+            var processedOptions = validateAndFixOptions(initialOptions);
+            if (processedOptions) {{
+                processedOptions = enhanceOptions(processedOptions);
+                console.log('PROCESSED OPTIONS:', JSON.stringify(processedOptions));
+                chart.setOption(processedOptions);
+                logDebug('success', 'Initial chart loaded successfully', null);
+            }} else {{
+                throw new Error('Initial options validation failed');
+            }}
+        }} catch (error) {{
+            logDebug('error', 'Failed to load initial chart: ' + error.message, error.stack);
+            chart.setOption({{
+                title: {{
+                    text: 'Chart Error',
+                    subtext: error.message,
+                    left: 'center',
+                    top: 'middle',
+                    textStyle: {{ color: '#ff0000' }}
+                }}
+            }});
+        }}")}
+
+        // Function to update chart options from outside
+        window.updateChartOptions = function(optionsJson) {{
+            try {{
+                var rawOption = typeof optionsJson === 'string' ? JSON.parse(optionsJson) : optionsJson;
+                logDebug('info', 'Updating chart via updateChartOptions', rawOption);
+                var option = validateAndFixOptions(rawOption);
+                if (option) {{
+                    option = enhanceOptions(option);
+                    logDebug('info', 'Applying options to chart', option);
+                    chart.clear();
+                    chart.setOption(option);
+                    logDebug('success', 'Chart updated successfully', null);
+                    return true;
+                }} else {{
+                    throw new Error('Options validation failed');
+                }}
+            }} catch (error) {{
+                logDebug('error', 'Failed to update chart: ' + error.message, error.stack);
+                // Display error message on chart
+                chart.setOption({{
+                    title: {{
+                        text: 'Chart Error',
+                        subtext: error.message,
+                        left: 'center',
+                        top: 'middle',
+                        textStyle: {{ color: '#ff0000' }}
+                    }}
+                }});
+                return false;
+            }}
+        }};
+
+        // Signal that the chart is ready
+        logDebug('info', 'Chart initialized and ready', null);
 
         window.addEventListener('resize', function() {{
             chart.resize();
@@ -244,9 +484,80 @@ namespace Flynk.Apps.Maui.ECharts
 
         private void UpdateChart(object options)
         {
-            // Regenerate the HTML with the new options embedded
-            string html = GenerateHtmlWithOptions(options);
-            Source = new HtmlWebViewSource { Html = html };
+            // Convert options to JSON
+            string chartOptions;
+            if (options is string str)
+            {
+                chartOptions = str;
+            }
+            else
+            {
+                var serializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = false,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                    NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                };
+                chartOptions = JsonSerializer.Serialize(options, serializerOptions);
+            }
+
+            // Use JavaScript to update the chart instead of reloading HTML
+            var jsCode = $@"
+                (function() {{
+                    try {{
+                        console.log('Attempting to update chart...');
+                        if (typeof chart === 'undefined' || !chart) {{
+                            console.error('Chart not initialized');
+                            return false;
+                        }}
+
+                        var rawOptions = {chartOptions};
+                        console.log('Raw options received:', rawOptions);
+
+                        // Apply validation and fixes if functions exist
+                        var options = rawOptions;
+                        if (typeof validateAndFixOptions === 'function') {{
+                            console.log('Applying validateAndFixOptions');
+                            options = validateAndFixOptions(rawOptions);
+                        }}
+                        if (typeof enhanceOptions === 'function') {{
+                            console.log('Applying enhanceOptions');
+                            options = enhanceOptions(options);
+                        }}
+
+                        console.log('Final options to apply:', options);
+                        chart.clear();
+                        chart.setOption(options);
+                        console.log('Chart updated successfully');
+
+                        if (typeof logDebug === 'function') {{
+                            logDebug('success', 'Chart updated successfully', null);
+                        }}
+                        return true;
+                    }} catch (error) {{
+                        console.error('Failed to update chart:', error.message, error.stack);
+                        if (typeof logDebug === 'function') {{
+                            logDebug('error', 'Failed to update chart: ' + error.message, error.stack);
+                        }}
+                        // Try to show error on chart
+                        if (typeof chart !== 'undefined' && chart) {{
+                            chart.setOption({{
+                                title: {{
+                                    text: 'Update Error',
+                                    subtext: error.message,
+                                    left: 'center',
+                                    top: 'middle'
+                                }}
+                            }});
+                        }}
+                        return false;
+                    }}
+                }})();
+            ";
+
+            _ = this.EvaluateJavaScriptAsync(jsCode);
         }
 
         public async Task SetOptionAsync(object options)
