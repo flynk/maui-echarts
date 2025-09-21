@@ -53,5 +53,8 @@
 	<ItemGroup>
 		<None Include="README.md" Pack="true" PackagePath="\" Condition="Exists('README.md')" />
 	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Flynk.Common.Meta.Charts\Flynk.Common.Meta.Charts.csproj" />
+	</ItemGroup>
 
 </Project>
